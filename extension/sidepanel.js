@@ -27,7 +27,24 @@ const els = {
   logBlock: $("logBlock"),
   toggleLog: $("toggleLog"),
   log: $("log"),
+  // Layout tab
+  tabLayout: $("tabLayout"),
+  layoutPane: $("layoutPane"),
+  lFont: $("lFont"),
+  lWidth: $("lWidth"),
+  lWidthV: $("lWidthV"),
+  lTop: $("lTop"),
+  lTopV: $("lTopV"),
+  lHeight: $("lHeight"),
+  lHeightV: $("lHeightV"),
+  lSpacing: $("lSpacing"),
+  lSpacingV: $("lSpacingV"),
+  lSpacingRow: $("lSpacingRow"),
+  lReset: $("lReset"),
+  pageBadge: $("pageBadge"),
 };
+
+let layout = Object.assign({}, window.ResumeForgerLayout.DEFAULTS);
 
 const compiler = new window.ResumeForgerLatex.LatexCompiler();
 const PDF_NAME = "resume.pdf";
@@ -45,8 +62,21 @@ function setStatus(text, kind) {
 }
 
 async function loadSettings() {
-  settings = await chrome.storage.local.get({ template: "", extra: "" });
+  const stored = await chrome.storage.local.get({
+    template: "",
+    extra: "",
+    layout: null,
+  });
+  settings = { template: stored.template, extra: stored.extra };
+  if (stored.layout) {
+    layout = Object.assign({}, window.ResumeForgerLayout.DEFAULTS, stored.layout);
+  }
   els.needsSetup.classList.toggle("hidden", !!settings.template.trim());
+  syncLayoutControls();
+}
+
+function saveLayout() {
+  chrome.storage.local.set({ layout });
 }
 
 /* ---- Settings link ---- */
@@ -137,21 +167,67 @@ els.loadTemplate.addEventListener("click", () => {
 });
 
 /* tab switching */
-function showLatex() {
-  els.tabLatex.classList.add("active");
-  els.tabFields.classList.remove("active");
-  els.fieldsPane.classList.add("hidden");
-  els.latexPane.classList.remove("hidden");
+function showTab(which) {
+  const tabs = { latex: els.tabLatex, fields: els.tabFields, layout: els.tabLayout };
+  const panes = { latex: els.latexPane, fields: els.fieldsPane, layout: els.layoutPane };
+  for (const k of Object.keys(tabs)) {
+    tabs[k].classList.toggle("active", k === which);
+    panes[k].classList.toggle("hidden", k !== which);
+  }
+  if (which === "fields") renderFields();
+  if (which === "layout") syncLayoutControls();
 }
-function showFields() {
-  els.tabFields.classList.add("active");
-  els.tabLatex.classList.remove("active");
-  els.latexPane.classList.add("hidden");
-  els.fieldsPane.classList.remove("hidden");
-  renderFields();
+els.tabLatex.addEventListener("click", () => showTab("latex"));
+els.tabFields.addEventListener("click", () => showTab("fields"));
+els.tabLayout.addEventListener("click", () => showTab("layout"));
+
+/* ---- Layout controls ---- */
+function syncLayoutControls() {
+  els.lFont.value = layout.fontSize || "";
+  els.lWidth.value = layout.width;
+  els.lTop.value = layout.top;
+  els.lHeight.value = layout.height;
+  els.lSpacing.value = layout.spacing;
+  els.lWidthV.textContent = signIn(layout.width);
+  els.lTopV.textContent = signIn(layout.top);
+  els.lHeightV.textContent = signIn(layout.height);
+  els.lSpacingV.textContent =
+    Number(layout.spacing).toFixed(2) +
+    (layout.spacing > 1 ? " (tighter)" : layout.spacing < 1 ? " (looser)" : "");
+  // Hide the spacing control if the current résumé has no \vspace to scale.
+  const caps = window.ResumeForgerLayout.capabilities(getTex() || settings.template || "");
+  els.lSpacingRow.classList.toggle("hidden", !caps.spacing);
 }
-els.tabLatex.addEventListener("click", showLatex);
-els.tabFields.addEventListener("click", showFields);
+
+function signIn(v) {
+  const n = Number(v);
+  if (Math.abs(n) < 1e-6) return "0 in";
+  return (n > 0 ? "+" : "") + n.toFixed(2) + " in";
+}
+
+function onLayoutInput(recompile) {
+  layout.fontSize = els.lFont.value;
+  layout.width = parseFloat(els.lWidth.value);
+  layout.top = parseFloat(els.lTop.value);
+  layout.height = parseFloat(els.lHeight.value);
+  layout.spacing = parseFloat(els.lSpacing.value);
+  syncLayoutControls();
+  saveLayout();
+  if (recompile && getTex().trim() && !busy) compileNow();
+}
+
+// Live label updates while dragging; recompile once on release/change.
+["lFont", "lWidth", "lTop", "lHeight", "lSpacing"].forEach((id) => {
+  els[id].addEventListener("input", () => onLayoutInput(false));
+  els[id].addEventListener("change", () => onLayoutInput(true));
+});
+
+els.lReset.addEventListener("click", () => {
+  layout = Object.assign({}, window.ResumeForgerLayout.DEFAULTS);
+  syncLayoutControls();
+  saveLayout();
+  if (getTex().trim() && !busy) compileNow();
+});
 
 /* form editor */
 function renderFields() {
@@ -209,13 +285,13 @@ function autosize(ta) {
 /* copy / download .tex */
 els.copyTex.addEventListener("click", async () => {
   try {
-    await navigator.clipboard.writeText(getTex());
+    await navigator.clipboard.writeText(renderedTex());
     els.copyTex.textContent = "Copied";
     setTimeout(() => (els.copyTex.textContent = "Copy .tex"), 1200);
   } catch (_) {}
 });
 els.downloadTex.addEventListener("click", () => {
-  const blob = new Blob([getTex()], { type: "application/x-tex" });
+  const blob = new Blob([renderedTex()], { type: "application/x-tex" });
   const url = URL.createObjectURL(blob);
   triggerDownload(url, "resume.tex");
   setTimeout(() => URL.revokeObjectURL(url), 3000);
@@ -236,7 +312,13 @@ function cleanPastedTex(input) {
 }
 
 /* ---- Compile ---- */
-els.compile.addEventListener("click", async () => {
+// The .tex actually sent to the compiler: the editor content with the current
+// layout applied on the fly (the editor itself always holds the clean base).
+function renderedTex() {
+  return window.ResumeForgerLayout.apply(getTex(), layout);
+}
+
+async function compileNow() {
   if (busy) return;
 
   // Auto-clean pasted output (fences / stray prose) so it's robust to
@@ -247,18 +329,29 @@ els.compile.addEventListener("click", async () => {
     if (!els.fieldsPane.classList.contains("hidden")) renderFields();
   }
 
-  const tex = getTex().trim();
-  if (!tex) {
+  if (!getTex().trim()) {
     setStatus("Nothing to compile — paste LaTeX or Load template first.", "err");
     return;
   }
   busy = true;
   els.compile.disabled = true;
+  hidePageBadge();
   try {
-    const { pdf, log } = await compiler.compile(tex, null, (s) => setStatus(s));
+    const { pdf, log, pages, overfull } = await compiler.compile(
+      renderedTex(),
+      null,
+      (s) => setStatus(s)
+    );
     showLog(log);
     showPdf(pdf);
-    setStatus("Done — preview below. Download or drag the PDF into your application.");
+    renderPageBadge(pages, overfull);
+    setStatus(
+      pages === 1
+        ? "Done — one page. Download or drag the PDF into your application."
+        : pages
+        ? "Done — " + pages + " pages. Use the Layout tab to fit it onto one."
+        : "Done — preview below."
+    );
     setTimeout(() => { if (!busy) setStatus(""); }, 4000);
   } catch (e) {
     if (e.log) {
@@ -274,7 +367,24 @@ els.compile.addEventListener("click", async () => {
     busy = false;
     els.compile.disabled = false;
   }
-});
+}
+els.compile.addEventListener("click", compileNow);
+
+function renderPageBadge(pages, overfull) {
+  if (!pages) return hidePageBadge();
+  const b = els.pageBadge;
+  b.className = "badge";
+  if (pages === 1) {
+    b.textContent = overfull ? "1 page · tight" : "1 page ✓";
+    b.classList.add(overfull ? "warn" : "ok");
+  } else {
+    b.textContent = pages + " pages";
+    b.classList.add("warn");
+  }
+}
+function hidePageBadge() {
+  els.pageBadge.classList.add("hidden");
+}
 
 /* ---- PDF output ---- */
 function clearPdf() {

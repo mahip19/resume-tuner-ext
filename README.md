@@ -17,13 +17,18 @@ paste the LaTeX Claude returns back into the panel and compile it in place.
 3. **Paste the LaTeX** Claude returns into the panel.
 4. **Compile to PDF** — preview it, download it, or drag it onto your desktop.
 
-Two editors for the résumé:
+Three editors/panels for the résumé:
 
 - **LaTeX** — the raw source.
 - **Fields** — a form grouped by section (Title / Dates / Subtitle / Location / each Bullet,
   plus editable header/skills/courses lines). Edits flow straight back into the LaTeX. Tuned
   for the common [Jake Gutierrez / sb2nov](https://github.com/sb2nov/resume) template, with a
   safe line-based fallback for anything it doesn't recognize.
+- **Layout** — sliders/dropdowns to fit one page yourself without waiting on Claude: font size,
+  text width, vertical position, text height, and compactness (spacing). Applied on the fly at
+  compile time as non-destructive overrides (your text is never touched), with a one-click
+  **Reset**. A **page-count badge** after each compile ("1 page ✓" / "2 pages") so you can dial
+  it in fast.
 
 ## Install (unpacked)
 
@@ -49,11 +54,14 @@ the compile request to texlive.net.
 
 ## Roadmap / ideas
 
-- Page-count indicator after compile (1 vs 2 pages at a glance)
-- One-click "comment out the OPTIONAL project" helper to fit one page
-- Drag-to-reorder bullets in the Fields tab
-- Per-template field-label profiles
-- Optional fully-offline compile
+- [x] Page-count badge after compile (1 vs 2 pages at a glance)
+- [x] Layout controls to fit one page without a Claude round-trip
+- [ ] "Changes only" mode — Claude returns just the edited lines (by field number),
+      previewed and applied in-panel, instead of re-emitting the whole résumé
+- [ ] One-click "comment out the OPTIONAL project" helper to fit one page
+- [ ] Drag-to-reorder bullets in the Fields tab
+- [ ] Per-template field-label profiles
+- [ ] Optional fully-offline compile
 
 ## License
 

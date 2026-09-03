@@ -1,10 +1,18 @@
 {
   "manifest_version": 3,
   "name": "Resume Forger",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "Tailor your LaTeX resume to a job description with a copy-paste prompt for Claude, edit fields with a simple form, and compile to a ready-to-drag PDF — all in a side panel, no API keys.",
-  "permissions": ["storage", "activeTab", "scripting", "tabs", "sidePanel"],
-  "host_permissions": ["https://texlive.net/*"],
+  "permissions": [
+    "storage",
+    "activeTab",
+    "scripting",
+    "tabs",
+    "sidePanel"
+  ],
+  "host_permissions": [
+    "https://texlive.net/*"
+  ],
   "background": {
     "service_worker": "background.js"
   },
