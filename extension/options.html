@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Resume Forger — Settings</title>
+    <link rel="stylesheet" href="options.css" />
+  </head>
+  <body>
+    <div class="wrap">
+      <h1>Resume Forger — Settings</h1>
+      <p class="hint">
+        No API key needed. This extension builds a prompt you paste into Claude,
+        then compiles the LaTeX Claude returns into a PDF — all locally.
+      </p>
+
+      <section>
+        <h2>LaTeX resume template</h2>
+        <p class="hint">
+          Paste your full <span class="mono">.tex</span> source (preamble +
+          document). It's the base that gets tailored, and what "Load template"
+          in the panel loads. It must compile on its own.
+        </p>
+        <textarea
+          id="template"
+          spellcheck="false"
+          placeholder="\documentclass{article}&#10;..."
+        ></textarea>
+      </section>
+
+      <section>
+        <h2>Standing preferences (optional)</h2>
+        <p class="hint">
+          Added to every prompt, e.g. "keep it to one page", "emphasize backend
+          work", "never mention the coffee-shop job".
+        </p>
+        <textarea
+          id="extra"
+          class="short"
+          spellcheck="false"
+          placeholder="Keep it to one page. Prefer measurable impact."
+        ></textarea>
+      </section>
+
+      <div class="actions">
+        <button id="save">Save</button>
+        <span id="status" class="status"></span>
+      </div>
+    </div>
+    <script src="options.js"></script>
+  </body>
+</html>

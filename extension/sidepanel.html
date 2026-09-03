@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Resume Forger</title>
+    <link rel="stylesheet" href="sidepanel.css" />
+  </head>
+  <body>
+    <header>
+      <div class="brand">Resume&nbsp;Forger</div>
+      <button id="settings" class="link" title="Settings">Settings</button>
+    </header>
+
+    <div id="needsSetup" class="banner hidden">
+      Paste your LaTeX resume in <a href="#" id="openSettings">Settings</a> first
+      — that's the base that gets tailored.
+    </div>
+
+    <!-- STEP 1: job description -->
+    <section class="step">
+      <div class="step-head"><span class="num">1</span> Job description</div>
+      <div class="label-row">
+        <span class="hint">Paste it, or pull it off the current tab.</span>
+        <button id="grab" class="link">Grab from page</button>
+      </div>
+      <textarea id="jd" placeholder="Paste the job description here…" spellcheck="false"></textarea>
+    </section>
+
+    <!-- STEP 2: prompt for Claude -->
+    <section class="step">
+      <div class="step-head"><span class="num">2</span> Prompt for Claude</div>
+      <div class="btn-row">
+        <button id="copyPrompt" class="primary">Copy prompt for Claude</button>
+        <button id="viewPrompt" class="link">preview</button>
+      </div>
+      <textarea id="prompt" class="hidden" readonly spellcheck="false"></textarea>
+      <p class="hint">
+        Paste it into Claude / Claude Code, then copy the LaTeX it returns and
+        paste it below.
+      </p>
+    </section>
+
+    <!-- STEP 3: the resume (paste back + edit) -->
+    <section class="step">
+      <div class="step-head"><span class="num">3</span> Your resume</div>
+      <div class="tabs">
+        <button id="tabLatex" class="tab active">LaTeX</button>
+        <button id="tabFields" class="tab">Fields</button>
+        <span class="spacer"></span>
+        <button id="loadTemplate" class="link" title="Start from your saved template">Load template</button>
+      </div>
+
+      <div id="latexPane">
+        <textarea id="tex" placeholder="Paste the LaTeX Claude gives you here — or Load template and edit." spellcheck="false"></textarea>
+      </div>
+
+      <div id="fieldsPane" class="hidden">
+        <p class="hint">
+          Edit the words on any line; commands like <span class="mono">\textbf{…}</span>
+          stay put. Changes flow back into the LaTeX automatically.
+        </p>
+        <div id="fields"></div>
+      </div>
+
+      <div class="btn-row">
+        <button id="compile" class="primary">Compile to PDF</button>
+        <button id="copyTex" class="link">Copy .tex</button>
+        <button id="downloadTex" class="link">Download .tex</button>
+      </div>
+    </section>
+
+    <div id="status" class="status hidden"></div>
+
+    <!-- STEP 4: PDF -->
+    <section id="pdfBlock" class="step hidden">
+      <div class="step-head"><span class="num">4</span> PDF</div>
+      <div
+        id="dragChip"
+        class="drag-chip"
+        draggable="true"
+        title="Drag me onto your desktop, then upload"
+      >
+        📄 <span id="dragName">resume.pdf</span>
+        <span class="drag-hint">drag me →</span>
+        <button id="download" class="link">Download</button>
+      </div>
+      <iframe id="pdfView" title="PDF preview"></iframe>
+    </section>
+
+    <section id="logBlock" class="step hidden">
+      <div class="label-row">
+        <label>Compile log</label>
+        <button id="toggleLog" class="link">show</button>
+      </div>
+      <pre id="log" class="log hidden"></pre>
+    </section>
+
+    <script src="lib/latex.js"></script>
+    <script src="lib/prompt.js"></script>
+    <script src="lib/texfields.js"></script>
+    <script src="sidepanel.js"></script>
+  </body>
+</html>

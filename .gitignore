@@ -1,0 +1,14 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor / tooling
+.vscode/
+.idea/
+
+# Claude Code local settings (personal, per-machine)
+.claude/
+
+# Logs / temp
+*.log
+tmp/
