@@ -30,15 +30,34 @@
     <!-- STEP 2: prompt for Claude -->
     <section class="step">
       <div class="step-head"><span class="num">2</span> Prompt for Claude</div>
+      <div class="seg-row">
+        <label class="seg"><input type="radio" name="pstyle" value="full" checked /> Full rewrite</label>
+        <label class="seg"><input type="radio" name="pstyle" value="changes" /> Changes only</label>
+      </div>
       <div class="btn-row">
         <button id="copyPrompt" class="primary">Copy prompt for Claude</button>
         <button id="viewPrompt" class="link">preview</button>
       </div>
       <textarea id="prompt" class="hidden" readonly spellcheck="false"></textarea>
-      <p class="hint">
-        Paste it into Claude / Claude Code, then copy the LaTeX it returns and
-        paste it below.
+
+      <p id="promptHintFull" class="hint">
+        Paste it into Claude / Claude Code, then paste the LaTeX it returns into
+        step 3.
       </p>
+
+      <div id="changesArea" class="hidden">
+        <p class="hint">
+          Faster: Claude only returns the changed lines. Paste its reply here —
+          lines like <span class="mono">7| new text</span> or
+          <span class="mono">7| DROP</span>.
+        </p>
+        <textarea id="changesInput" placeholder="7| rewritten bullet text…" spellcheck="false"></textarea>
+        <div class="btn-row">
+          <button id="applyChanges" class="primary">Apply changes</button>
+          <span id="changesMsg" class="hint"></span>
+        </div>
+        <div id="changesReport" class="report hidden"></div>
+      </div>
     </section>
 
     <!-- STEP 3: the resume (paste back + edit) -->
@@ -154,6 +173,7 @@
     <script src="lib/texfields.js"></script>
     <script src="lib/layout.js"></script>
     <script src="lib/keywords.js"></script>
+    <script src="lib/changes.js"></script>
     <script src="sidepanel.js"></script>
   </body>
 </html>

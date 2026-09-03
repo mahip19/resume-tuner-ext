@@ -50,7 +50,17 @@ const els = {
   kwMatched: $("kwMatched"),
   kwMissingCount: $("kwMissingCount"),
   kwMatchedCount: $("kwMatchedCount"),
+  // Changes-only mode
+  promptHintFull: $("promptHintFull"),
+  changesArea: $("changesArea"),
+  changesInput: $("changesInput"),
+  applyChanges: $("applyChanges"),
+  changesMsg: $("changesMsg"),
+  changesReport: $("changesReport"),
 };
+
+let promptStyle = "full"; // "full" | "changes"
+let changesExpectedCount = 0; // editable-line count Claude was shown
 
 let layout = Object.assign({}, window.ResumeForgerLayout.DEFAULTS);
 
@@ -74,13 +84,16 @@ async function loadSettings() {
     template: "",
     extra: "",
     layout: null,
+    promptStyle: "full",
   });
   settings = { template: stored.template, extra: stored.extra };
   if (stored.layout) {
     layout = Object.assign({}, window.ResumeForgerLayout.DEFAULTS, stored.layout);
   }
+  promptStyle = stored.promptStyle === "changes" ? "changes" : "full";
   els.needsSetup.classList.toggle("hidden", !!settings.template.trim());
   syncLayoutControls();
+  applyPromptStyle();
 }
 
 function saveLayout() {
@@ -120,16 +133,48 @@ els.grab.addEventListener("click", () => {
 });
 
 /* ---- Step 2: prompt for Claude ---- */
-function currentPrompt() {
+function applyPromptStyle() {
+  for (const r of document.querySelectorAll('input[name="pstyle"]')) {
+    r.checked = r.value === promptStyle;
+  }
+  const changes = promptStyle === "changes";
+  els.changesArea.classList.toggle("hidden", !changes);
+  els.promptHintFull.classList.toggle("hidden", changes);
+}
+
+document.querySelectorAll('input[name="pstyle"]').forEach((r) => {
+  r.addEventListener("change", () => {
+    if (!r.checked) return;
+    promptStyle = r.value === "changes" ? "changes" : "full";
+    chrome.storage.local.set({ promptStyle });
+    applyPromptStyle();
+  });
+});
+
+// Build the prompt text for the current style. For "changes" it needs the
+// résumé in the editor; if empty, seed it from the saved template.
+function currentPromptText() {
+  const jd = els.jd.value.trim();
+  if (promptStyle === "changes") {
+    if (!getTex().trim() && settings.template.trim()) setTex(settings.template);
+    const parsed = window.ResumeForgerFields.parse(getTex());
+    const editable = window.ResumeForgerChanges.editableFields(parsed);
+    changesExpectedCount = editable.length;
+    return window.ResumeForgerChanges.buildChangesPrompt({
+      jobDescription: jd,
+      editable,
+      extraInstructions: settings.extra,
+    });
+  }
   return window.ResumeForgerPrompt.buildPrompt({
     templateTex: settings.template,
-    jobDescription: els.jd.value.trim(),
+    jobDescription: jd,
     extraInstructions: settings.extra,
   });
 }
 
 els.copyPrompt.addEventListener("click", async () => {
-  if (!settings.template.trim()) {
+  if (!settings.template.trim() && !getTex().trim()) {
     els.needsSetup.classList.remove("hidden");
     return;
   }
@@ -137,7 +182,7 @@ els.copyPrompt.addEventListener("click", async () => {
     setStatus("Add a job description first.", "err");
     return;
   }
-  const text = currentPrompt();
+  const text = currentPromptText();
   els.prompt.value = text;
   try {
     await navigator.clipboard.writeText(text);
@@ -150,10 +195,84 @@ els.copyPrompt.addEventListener("click", async () => {
 });
 
 els.viewPrompt.addEventListener("click", () => {
-  if (els.prompt.classList.contains("hidden")) els.prompt.value = currentPrompt();
+  if (els.prompt.classList.contains("hidden")) els.prompt.value = currentPromptText();
   const hidden = els.prompt.classList.toggle("hidden");
   els.viewPrompt.textContent = hidden ? "preview" : "hide";
 });
+
+/* ---- Apply "changes only" reply ---- */
+els.applyChanges.addEventListener("click", async () => {
+  const raw = els.changesInput.value.trim();
+  if (!raw) {
+    els.changesMsg.textContent = "Paste Claude's changes first.";
+    return;
+  }
+  if (!getTex().trim()) {
+    els.changesMsg.textContent = "Load your résumé (step 3) first.";
+    return;
+  }
+
+  const parsed = window.ResumeForgerFields.parse(getTex());
+  const editable = window.ResumeForgerChanges.editableFields(parsed);
+  const changes = window.ResumeForgerChanges.parseResponse(raw);
+
+  if (!changes.length) {
+    els.changesMsg.textContent = "No “N| text” lines found in that reply.";
+    return;
+  }
+
+  const drift =
+    changesExpectedCount && editable.length !== changesExpectedCount
+      ? " (note: the résumé changed since the prompt — line numbers may be off)"
+      : "";
+
+  const report = window.ResumeForgerChanges.applyChanges(editable, changes);
+  let out = window.ResumeForgerFields.serialize(parsed);
+  out = window.ResumeForgerChanges.cleanupDropped(out);
+  setTex(out);
+
+  renderChangesReport(report);
+
+  const applied = report.filter((r) => r.status === "ok" && !r.drop).length;
+  const dropped = report.filter((r) => r.status === "ok" && r.drop).length;
+  const bad = report.filter((r) => r.status === "out-of-range").length;
+  els.changesMsg.textContent =
+    "Applied " + applied + ", dropped " + dropped + (bad ? ", " + bad + " skipped" : "") + drift + ".";
+
+  if (!els.fieldsPane.classList.contains("hidden")) renderFields();
+  if (keywordsVisible()) renderKeywords();
+  if (!busy) compileNow();
+});
+
+function renderChangesReport(report) {
+  els.changesReport.textContent = "";
+  els.changesReport.classList.remove("hidden");
+  for (const r of report) {
+    const row = document.createElement("div");
+    row.className = "row";
+    if (r.status === "out-of-range") {
+      row.innerHTML =
+        '<span class="tag warn">' + r.n + " ⚠</span>no line #" + r.n + " to change";
+    } else if (r.status === "unchanged") {
+      row.innerHTML = '<span class="tag">' + r.n + "</span>no change";
+    } else if (r.drop) {
+      row.innerHTML =
+        '<span class="tag drop">' + r.n + ' ✕</span><span class="old"></span>';
+      row.querySelector(".old").textContent = trunc(r.old);
+    } else {
+      row.innerHTML =
+        '<span class="tag ok">' +
+        r.n +
+        ' ✎</span><span class="new"></span>';
+      row.querySelector(".new").textContent = trunc(r.new);
+    }
+    els.changesReport.appendChild(row);
+  }
+}
+function trunc(s) {
+  s = String(s || "").replace(/\s+/g, " ").trim();
+  return s.length > 90 ? s.slice(0, 90) + "…" : s;
+}
 
 /* ---- Step 3: the resume editor ---- */
 function getTex() {

@@ -13,8 +13,12 @@ paste the LaTeX Claude returns back into the panel and compile it in place.
 1. **Job description** — paste it, or click **Grab from page** to pull it off the current tab.
 2. **Copy prompt for Claude** — one click copies a prompt (your résumé + the JD + your
    standing preferences) that instructs Claude to keep your template's styling and spacing
-   byte-for-byte and only tweak the wording to fit one page.
-3. **Paste the LaTeX** Claude returns into the panel.
+   byte-for-byte and only tweak the wording to fit one page. Two styles:
+   - **Full rewrite** — Claude returns the whole tailored `.tex`.
+   - **Changes only** — Claude returns just the edited lines (`N| new text` / `N| DROP`);
+     the panel previews a diff and applies them by field number (titles, companies, and
+     dates are excluded, so it can't touch facts). Much less to generate and paste.
+3. **Paste** the LaTeX (full rewrite) or the changes (changes-only) back into the panel.
 4. **Compile to PDF** — preview it, download it, or drag it onto your desktop.
 
 Three editors/panels for the résumé:
@@ -60,7 +64,7 @@ the compile request to texlive.net.
 - [x] Page-count badge after compile (1 vs 2 pages at a glance)
 - [x] Layout controls to fit one page without a Claude round-trip
 - [x] ATS keyword match (matched vs missing keywords from the JD)
-- [ ] "Changes only" mode — Claude returns just the edited lines (by field number),
+- [x] "Changes only" mode — Claude returns just the edited lines (by field number),
       previewed and applied in-panel, instead of re-emitting the whole résumé
 - [ ] One-click "comment out the OPTIONAL project" helper to fit one page
 - [ ] Drag-to-reorder bullets in the Fields tab

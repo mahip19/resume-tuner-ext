@@ -163,7 +163,43 @@ button { font: inherit; cursor: pointer; }
 .badge.ok { color: var(--ok); border-color: var(--ok); background: color-mix(in srgb, var(--ok) 12%, transparent); }
 .badge.warn { color: var(--accent); border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); }
 
-.tabs { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+/* Prompt-style toggle + changes area */
+.seg-row { display: flex; gap: 8px; margin-bottom: 8px; }
+.seg {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 5px 11px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--field);
+  cursor: pointer;
+}
+.seg input { accent-color: var(--accent); }
+#changesArea { margin-top: 8px; }
+#changesInput { width: 100%; min-height: 110px; }
+.report {
+  margin-top: 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--field);
+  padding: 8px 10px;
+  font-size: 12px;
+  max-height: 220px;
+  overflow: auto;
+}
+.report .row { padding: 3px 0; border-bottom: 1px dashed var(--border); }
+.report .row:last-child { border-bottom: 0; }
+.report .tag { font-weight: 700; margin-right: 6px; }
+.report .tag.ok { color: var(--accent); }
+.report .tag.drop { color: var(--err); }
+.report .tag.warn { color: var(--err); }
+.report .old { color: var(--muted); text-decoration: line-through; }
+.report .new { color: var(--fg); }
+
+.tabs { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; flex-wrap: wrap; }
 .tab {
   background: var(--field);
   border: 1px solid var(--border);
