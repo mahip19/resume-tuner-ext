@@ -48,6 +48,7 @@
         <button id="tabLatex" class="tab active">LaTeX</button>
         <button id="tabFields" class="tab">Fields</button>
         <button id="tabLayout" class="tab">Layout</button>
+        <button id="tabKeywords" class="tab">Keywords</button>
         <span class="spacer"></span>
         <button id="loadTemplate" class="link" title="Start from your saved template">Load template</button>
       </div>
@@ -97,6 +98,23 @@
         <button id="lReset" class="link">Reset to template</button>
       </div>
 
+      <div id="keywordsPane" class="hidden">
+        <p class="hint">
+          Keywords pulled from the job description in step 1, matched against your
+          résumé (ATS-style). Add the <b>missing</b> ones you genuinely have —
+          click a chip to copy it.
+        </p>
+        <div id="kwSummary" class="kw-summary"></div>
+        <div class="kw-group">
+          <div class="kw-h">Missing <span id="kwMissingCount" class="kw-c"></span></div>
+          <div id="kwMissing" class="chips"></div>
+        </div>
+        <div class="kw-group">
+          <div class="kw-h">Matched <span id="kwMatchedCount" class="kw-c"></span></div>
+          <div id="kwMatched" class="chips"></div>
+        </div>
+      </div>
+
       <div class="btn-row">
         <button id="compile" class="primary">Compile to PDF</button>
         <span id="pageBadge" class="badge hidden"></span>
@@ -135,6 +153,7 @@
     <script src="lib/prompt.js"></script>
     <script src="lib/texfields.js"></script>
     <script src="lib/layout.js"></script>
+    <script src="lib/keywords.js"></script>
     <script src="sidepanel.js"></script>
   </body>
 </html>

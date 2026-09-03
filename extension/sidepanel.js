@@ -42,6 +42,14 @@ const els = {
   lSpacingRow: $("lSpacingRow"),
   lReset: $("lReset"),
   pageBadge: $("pageBadge"),
+  // Keywords tab
+  tabKeywords: $("tabKeywords"),
+  keywordsPane: $("keywordsPane"),
+  kwSummary: $("kwSummary"),
+  kwMissing: $("kwMissing"),
+  kwMatched: $("kwMatched"),
+  kwMissingCount: $("kwMissingCount"),
+  kwMatchedCount: $("kwMatchedCount"),
 };
 
 let layout = Object.assign({}, window.ResumeForgerLayout.DEFAULTS);
@@ -168,18 +176,103 @@ els.loadTemplate.addEventListener("click", () => {
 
 /* tab switching */
 function showTab(which) {
-  const tabs = { latex: els.tabLatex, fields: els.tabFields, layout: els.tabLayout };
-  const panes = { latex: els.latexPane, fields: els.fieldsPane, layout: els.layoutPane };
+  const tabs = {
+    latex: els.tabLatex,
+    fields: els.tabFields,
+    layout: els.tabLayout,
+    keywords: els.tabKeywords,
+  };
+  const panes = {
+    latex: els.latexPane,
+    fields: els.fieldsPane,
+    layout: els.layoutPane,
+    keywords: els.keywordsPane,
+  };
   for (const k of Object.keys(tabs)) {
     tabs[k].classList.toggle("active", k === which);
     panes[k].classList.toggle("hidden", k !== which);
   }
   if (which === "fields") renderFields();
   if (which === "layout") syncLayoutControls();
+  if (which === "keywords") renderKeywords();
 }
 els.tabLatex.addEventListener("click", () => showTab("latex"));
 els.tabFields.addEventListener("click", () => showTab("fields"));
 els.tabLayout.addEventListener("click", () => showTab("layout"));
+els.tabKeywords.addEventListener("click", () => showTab("keywords"));
+
+/* ---- Keywords (ATS match) ---- */
+function keywordsVisible() {
+  return !els.keywordsPane.classList.contains("hidden");
+}
+
+function renderKeywords() {
+  const jd = els.jd.value.trim();
+  const tex = getTex() || settings.template || "";
+  els.kwMissing.textContent = "";
+  els.kwMatched.textContent = "";
+  els.kwMissingCount.textContent = "";
+  els.kwMatchedCount.textContent = "";
+
+  if (!jd) {
+    els.kwSummary.textContent = "Paste a job description in step 1 to see keyword matches.";
+    return;
+  }
+
+  const r = window.ResumeForgerKeywords.analyze(jd, tex);
+  const cls = r.score >= 75 ? "hi" : r.score >= 50 ? "mid" : "lo";
+  els.kwSummary.innerHTML =
+    r.matchedCount +
+    " / " +
+    r.total +
+    " keywords" +
+    '<span class="pct ' +
+    cls +
+    '">' +
+    r.score +
+    "%</span>";
+
+  els.kwMissingCount.textContent = "(" + r.missing.length + ")";
+  els.kwMatchedCount.textContent = "(" + r.matched.length + ")";
+
+  if (!r.missing.length) {
+    const s = document.createElement("span");
+    s.className = "chip empty";
+    s.textContent = "none — nice coverage";
+    els.kwMissing.appendChild(s);
+  }
+  for (const k of r.missing) {
+    const c = document.createElement("span");
+    c.className = "chip miss";
+    c.textContent = k.term;
+    c.title = "Click to copy · appears " + k.count + "× in the JD";
+    c.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(k.term);
+        const old = c.textContent;
+        c.textContent = old + " ✓";
+        setTimeout(() => (c.textContent = old), 900);
+      } catch (_) {}
+    });
+    els.kwMissing.appendChild(c);
+  }
+  for (const k of r.matched) {
+    const c = document.createElement("span");
+    c.className = "chip hit";
+    c.textContent = k.term;
+    els.kwMatched.appendChild(c);
+  }
+}
+
+// Keep the analysis fresh while it's the active tab.
+let kwTimer = null;
+function scheduleKeywords() {
+  if (!keywordsVisible()) return;
+  clearTimeout(kwTimer);
+  kwTimer = setTimeout(renderKeywords, 250);
+}
+els.jd.addEventListener("input", scheduleKeywords);
+els.tex.addEventListener("input", scheduleKeywords);
 
 /* ---- Layout controls ---- */
 function syncLayoutControls() {

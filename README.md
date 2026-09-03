@@ -29,6 +29,9 @@ Three editors/panels for the résumé:
   compile time as non-destructive overrides (your text is never touched), with a one-click
   **Reset**. A **page-count badge** after each compile ("1 page ✓" / "2 pages") so you can dial
   it in fast.
+- **Keywords** — an ATS-style match (like Jobscan / Resume Worded), computed locally: it pulls
+  skills/keywords from the job description and shows which your résumé **matches** vs **misses**,
+  with a match score. Click a missing chip to copy it. No AI, no network.
 
 ## Install (unpacked)
 
@@ -56,6 +59,7 @@ the compile request to texlive.net.
 
 - [x] Page-count badge after compile (1 vs 2 pages at a glance)
 - [x] Layout controls to fit one page without a Claude round-trip
+- [x] ATS keyword match (matched vs missing keywords from the JD)
 - [ ] "Changes only" mode — Claude returns just the edited lines (by field number),
       previewed and applied in-panel, instead of re-emitting the whole résumé
 - [ ] One-click "comment out the OPTIONAL project" helper to fit one page
